@@ -322,7 +322,7 @@
             </select>
             <input type="number" placeholder="Value" style={inputStyle} value={form.value} onChange={e => setForm({...form, value: e.target.value})} />
             <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-              <button className="btn-primary" style={{ flex: 1 }} onClick={() => onSave({...form, value: Number(form.value) || 0, avatar: form.name.split(" ").map(w => w[0]).join("")})}>Save</button>
+              <button className="btn-primary" style={{ flex: 1 }} onClick={() => onSave({...form, value: Number(form.value) || 0, avatar: (form.name || "").split(" ").map(w => w[0]).join("").toUpperCase() || "??"})}>Save</button>
               <button className="btn-primary" style={{ flex: 1, background: "#334155" }} onClick={onCancel}>Cancel</button>
             </div>
           </div>
@@ -402,7 +402,7 @@
             <input className="header-search" placeholder="Search records, events..." value={search} onChange={e => setSearch(e.target.value)} />
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ color: "var(--text-muted)", fontSize: 18 }}>🔔</div>
-              <Avatar initials={session?.user?.email?.[0].toUpperCase() || "J"} size={32} />
+              <Avatar initials={session?.user?.email?.[0]?.toUpperCase() || "J"} size={32} />
             </div>
           </header>
 
@@ -416,7 +416,7 @@
                       <div key={c.id} className="card" onClick={() => { setEditContact(c); setShowForm(true); }} style={{ background: "rgba(255,255,255,0.03)", padding: 12, fontSize: 12, cursor: "pointer", marginBottom: 8 }}>
                         <div style={{ fontWeight: 600 }}>{c.name}</div>
                         <div style={{ color: "var(--text-muted)", fontSize: 11 }}>{c.company}</div>
-                        <div style={{ color: "#34d399", fontWeight: 700, marginTop: 4 }}>${c.value.toLocaleString()}</div>
+                        <div style={{ color: "#34d399", fontWeight: 700, marginTop: 4 }}>${(c.value || 0).toLocaleString()}</div>
                       </div>
                     ))}
                     <button onClick={() => setShowForm(true)} style={{ width: "100%", background: "none", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: 10, padding: 8, cursor: "pointer" }}>+ Add</button>
@@ -445,12 +445,12 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase())).map(c => (
+                    {contacts.filter(c => (c.name || "").toLowerCase().includes(search.toLowerCase())).map(c => (
                       <tr key={c.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }} onClick={() => { setEditContact(c); setShowForm(true); }}>
                         <td style={{ padding: "12px 8px" }}>{c.name}</td>
                         <td style={{ padding: "12px 8px" }}>{c.company}</td>
                         <td style={{ padding: "12px 8px" }}><StageBadge stage={c.stage} /></td>
-                        <td style={{ padding: "12px 8px" }}>${c.value.toLocaleString()}</td>
+                        <td style={{ padding: "12px 8px" }}>${(c.value || 0).toLocaleString()}</td>
                         <td style={{ padding: "12px 8px", color: "var(--text-muted)" }}>{c.email}</td>
                       </tr>
                     ))}
