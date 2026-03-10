@@ -64,11 +64,25 @@
     }
 
     .sidebar-brand {
-      padding: 0 24px 24px;
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      color: var(--sf-blue);
-      letter-spacing: -0.02em;
+      padding: 0 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: #fff;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: #00f5e1;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-size: 18px;
     }
 
     .sidebar-nav {
@@ -76,27 +90,27 @@
     }
 
     .nav-item {
-      padding: 12px 24px;
+      padding: 10px 16px;
+      margin: 4px 12px;
       display: flex;
       align-items: center;
       gap: 12px;
-      color: var(--text-muted);
+      color: #94a3b8;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
+      border-radius: 12px;
       transition: all 0.2s;
     }
 
-    .nav-item:hover, .nav-item.active {
-      color: var(--text-main);
+    .nav-item:hover {
+      color: #fff;
       background: rgba(255, 255, 255, 0.05);
     }
 
     .nav-item.active {
-      background: rgba(45, 212, 191, 0.1);
-      color: #2dd4bf;
-      border-left: 3px solid #2dd4bf;
-      padding-left: 21px;
+      background: #00f5e1;
+      color: #0f172a;
     }
 
     .header {
@@ -408,14 +422,37 @@
       return (
         <div className="app-shell">
           <aside className="sidebar">
-            <div className="sidebar-brand">LovelyJJ <span style={{ color: "#fff", opacity: 0.5 }}>CRM</span></div>
+            <div className="sidebar-brand">
+              <div className="brand-logo">💎</div>
+              <div>
+                <div style={{ lineHeight: 1 }}>LovelyJJ</div>
+                <div style={{ fontSize: 10, opacity: 0.6, textTransform: "uppercase", letterSpacing: 1, marginTop: 4 }}>Solo Pro CRM</div>
+              </div>
+            </div>
             <nav className="sidebar-nav">
-              {["Dashboard", "Agenda", "Automations", "Clients"].map(tab => (
-                <div key={tab} className={`nav-item ${activeTab === tab ? "active" : ""}`} onClick={() => setActiveTab(tab)}>
+              {[
+                { id: "Dashboard", icon: "grid", label: "Dashboard" },
+                { id: "Agenda", icon: "calendar", label: "Agenda" },
+                { id: "Clients", icon: "users", label: "Clients" },
+                { id: "Leads", icon: "user-plus", label: "Leads" },
+                { id: "Analytics", icon: "trending-up", label: "Analytics" },
+                { id: "Campaigns", icon: "megaphone", label: "Campaigns" },
+                { id: "Expenses", icon: "dollar-sign", label: "Expenses" },
+                { id: "Billing", icon: "credit-card", label: "Billing" },
+                { id: "Settings", icon: "settings", label: "Settings" }
+              ].map(item => (
+                <div key={item.id} className={`nav-item ${activeTab === item.id ? "active" : ""}`} onClick={() => setActiveTab(item.id)}>
                   <span style={{ fontSize: 18 }}>
-                    {tab === "Dashboard" ? "📊" : tab === "Agenda" ? "📅" : tab === "Automations" ? "⚡" : "👥"}
+                    {item.id === "Dashboard" ? "⊞" : 
+                     item.id === "Agenda" ? "📅" : 
+                     item.id === "Clients" ? "👥" : 
+                     item.id === "Leads" ? "👤+" :
+                     item.id === "Analytics" ? "📈" :
+                     item.id === "Campaigns" ? "📢" :
+                     item.id === "Expenses" ? "💵" :
+                     item.id === "Billing" ? "💳" : "⚙️"}
                   </span>
-                  {tab}
+                  {item.label}
                 </div>
               ))}
             </nav>
@@ -482,6 +519,14 @@
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {["Leads", "Analytics", "Campaigns", "Expenses", "Billing", "Settings"].includes(activeTab) && (
+              <div className="card animate-fade" style={{ textAlign: "center", padding: 60 }}>
+                <div style={{ fontSize: 48, marginBottom: 20 }}>🚧</div>
+                <h3>{activeTab} Coming Soon</h3>
+                <p style={{ color: "var(--text-muted)" }}>We're working hard to bring you the best {activeTab} experience.</p>
               </div>
             )}
           </main>
