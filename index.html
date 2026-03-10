@@ -93,7 +93,9 @@
     }
 
     .nav-item.active {
-      border-left: 3px solid var(--sf-blue);
+      background: rgba(45, 212, 191, 0.1);
+      color: #2dd4bf;
+      border-left: 3px solid #2dd4bf;
       padding-left: 21px;
     }
 
@@ -333,7 +335,7 @@
     function SoloCRM() {
       const [session, setSession] = useState(null);
       const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
-      const [activeTab, setActiveTab] = useState("Pipeline");
+      const [activeTab, setActiveTab] = useState("Dashboard");
       const [contacts, setContacts] = useState([]);
       const [loading, setLoading] = useState(true);
       const [showForm, setShowForm] = useState(false);
@@ -408,9 +410,11 @@
           <aside className="sidebar">
             <div className="sidebar-brand">LovelyJJ <span style={{ color: "#fff", opacity: 0.5 }}>CRM</span></div>
             <nav className="sidebar-nav">
-              {["Pipeline", "Calendar", "Workflows", "Contacts"].map(tab => (
+              {["Dashboard", "Agenda", "Automations", "Clients"].map(tab => (
                 <div key={tab} className={`nav-item ${activeTab === tab ? "active" : ""}`} onClick={() => setActiveTab(tab)}>
-                  <span style={{ fontSize: 18 }}>{tab === "Pipeline" ? "📊" : tab === "Calendar" ? "📅" : tab === "Workflows" ? "⚡" : "👥"}</span>
+                  <span style={{ fontSize: 18 }}>
+                    {tab === "Dashboard" ? "📊" : tab === "Agenda" ? "📅" : tab === "Automations" ? "⚡" : "👥"}
+                  </span>
                   {tab}
                 </div>
               ))}
@@ -429,7 +433,7 @@
           </header>
 
           <main className="main">
-            {activeTab === "Pipeline" && (
+            {activeTab === "Dashboard" && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, alignItems: "start" }}>
                 {STAGES.map(stage => (
                   <div key={stage} className="card" style={{ padding: 12 }}>
@@ -447,10 +451,10 @@
               </div>
             )}
 
-            {activeTab === "Calendar" && <CalendarView contacts={contacts} />}
-            {activeTab === "Workflows" && <WorkflowManager contacts={contacts} />}
+            {activeTab === "Agenda" && <CalendarView contacts={contacts} />}
+            {activeTab === "Automations" && <WorkflowManager contacts={contacts} />}
             
-            {activeTab === "Contacts" && (
+            {activeTab === "Clients" && (
               <div className="card animate-fade">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                   <h2 style={{ fontFamily: "'Playfair Display', serif" }}>Contacts</h2>
