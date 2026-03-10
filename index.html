@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>SoloGrowth | Luxury Entrepreneur CRM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description"
+    content="A premium, glassmorphic CRM for solo professionals. Manage leads, track deals, and gain financial insights.">
+  <!-- OpenGraph -->
+  <meta property="og:title" content="SoloGrowth CRM">
+  <meta property="og:description" content="Elevate your solo business with our premium pipeline tracker.">
+  <meta property="og:type" content="website">
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --sf-blue: #0176d3;
+      --sf-blue-deep: #014486;
+      --bg-main: #060c17;
+      --bg-sidebar: #0f172a;
+      --bg-card: rgba(15, 23, 42, 0.4);
+      --border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg-main);
+      font-family: 'Inter', sans-serif;
+      color: var(--text-main);
+      overflow: hidden; /* Main layout handles scroll */
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-areas: "sidebar header" "sidebar main";
+      grid-template-columns: 240px 1fr;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .sidebar {
+      grid-area: sidebar;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+    }
+
+    .sidebar-brand {
+      padding: 0 24px 24px;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--sf-blue);
+      letter-spacing: -0.02em;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+    }
+
+    .nav-item {
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-item.active {
+      border-left: 3px solid var(--sf-blue);
+      padding-left: 21px;
+    }
+
+    .header {
+      grid-area: header;
+      background: var(--bg-main);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .header-search {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      width: 300px;
+      color: var(--text-main);
+      font-size: 13px;
+    }
+
+    .main {
+      grid-area: main;
+      padding: 24px;
+      overflow-y: auto;
+      background: #020617;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .btn-primary {
+      background: var(--sf-blue);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--sf-blue-deep);
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const SUPABASE_URL = "https://tsnzcxngefgkxssaorrq.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_0Kj2fqHbLAbFqM44uMYSfA_pzJEVzZD";
+    const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const STAGES = ["Lead", "Contacted", "Proposal", "Negotiating", "Won", "Lost"];
+    const STAGE_COLORS = {
+      Lead: "#94a3b8",
+      Contacted: "#60a5fa",
+      Proposal: "#f59e0b",
+      Negotiating: "#a78bfa",
+      Won: "#34d399",
+      Lost: "#f87171",
+    };
+
+    const TAGS = ["Design", "Dev", "Consulting", "Writing", "Marketing", "Other"];
+
+    const initialContacts = [
+      { id: 1, name: "Sarah Chen", company: "Bright Labs", email: "sarah@brightlabs.io", phone: "+1 415 555 0192", stage: "Proposal", value: 8500, tags: ["Design"], notes: "Needs brand refresh + website. Deadline: end of Q2.", lastContact: "2026-03-05", avatar: "SC" },
+      { id: 2, name: "Marcus Webb", company: "Webb & Co.", email: "marcus@webbco.com", phone: "+1 212 555 0144", stage: "Won", value: 12000, tags: ["Consulting"], notes: "Signed 3-month retainer. Monthly check-ins.", lastContact: "2026-03-01", avatar: "MW" },
+      { id: 3, name: "Priya Nair", company: "Solostack", email: "priya@solostack.io", phone: "+1 512 555 0178", stage: "Lead", value: 4200, tags: ["Dev"], notes: "Interested in MVP build. Wants React + Supabase.", lastContact: "2026-02-28", avatar: "PN" },
+      { id: 4, name: "Tom Kellner", company: "Kellner Media", email: "tom@kellnermedia.com", phone: "+1 310 555 0166", stage: "Contacted", value: 6800, tags: ["Writing", "Marketing"], notes: "Needs content strategy for 6 months.", lastContact: "2026-03-07", avatar: "TK" },
+      { id: 5, name: "Aisha Osman", company: "Freelance", email: "aisha@aishadesigns.co", phone: "+1 646 555 0133", stage: "Negotiating", value: 3500, tags: ["Design"], notes: "Finalizing scope. Logo + brand kit.", lastContact: "2026-03-08", avatar: "AO" },
+    ];
+
+    function Avatar({ initials, size = 32 }) {
+      const colors = ["#4f46e5", "#0891b2", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777"];
+      const color = colors[initials.charCodeAt(0) % colors.length];
+      return (
+        <div style={{
+          width: size, height: size, borderRadius: "50%", background: color,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "'DM Mono', monospace", fontSize: size * 0.4, fontWeight: 700,
+          color: "#fff", flexShrink: 0
+        }}>{initials}</div>
+      );
+    }
+
+    function StageBadge({ stage }) {
+      return (
+        <span style={{
+          background: STAGE_COLORS[stage] + "22",
+          color: STAGE_COLORS[stage],
+          borderRadius: 4, padding: "2px 8px",
+          fontSize: 10, fontWeight: 700, textTransform: "uppercase"
+        }}>{stage}</span>
+      );
+    }
+
+    function CalendarView({ contacts }) {
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const [currentDate, setCurrentDate] = useState(new Date());
+      
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      const daysInMonth = endOfMonth.getDate();
+      const firstDayIndex = startOfMonth.getDay();
+
+      const events = contacts.filter(c => c.lastContact).map(c => ({
+        date: new Date(c.lastContact),
+        title: `Follow up: ${c.name}`,
+        color: STAGE_COLORS[c.stage]
+      }));
+
+      return (
+        <div className="card animate-fade">
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, alignItems: "center" }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif" }}>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn-primary" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} style={{ padding: "4px 12px" }}>&lt;</button>
+              <button className="btn-primary" onClick={() => setCurrentDate(new Date())} style={{ padding: "4px 12px" }}>Today</button>
+              <button className="btn-primary" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} style={{ padding: "4px 12px" }}>&gt;</button>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1 }}>
+            {days.map(d => <div key={d} style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 11, paddingBottom: 10 }}>{d}</div>)}
+            {Array.from({ length: 42 }).map((_, i) => {
+              const day = i - firstDayIndex + 1;
+              const isCurrentMonth = day > 0 && day <= daysInMonth;
+              const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              const dayEvents = events.filter(e => e.date.toDateString() === date.toDateString());
+
+              return (
+                <div key={i} style={{
+                  minHeight: 100, border: "1px solid var(--border)", padding: 8,
+                  background: isCurrentMonth ? "rgba(255,255,255,0.02)" : "transparent",
+                  opacity: isCurrentMonth ? 1 : 0.3
+                }}>
+                  <div style={{ fontSize: 12, marginBottom: 4 }}>{day > 0 && day <= daysInMonth ? day : ""}</div>
+                  {dayEvents.map((e, idx) => (
+                    <div key={idx} style={{ 
+                      fontSize: 10, padding: "2px 4px", borderRadius: 2, background: e.color + "33", 
+                      color: e.color, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden" 
+                    }}>• {e.title}</div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function WorkflowManager({ contacts }) {
+      const [workflows, setWorkflows] = useState([
+        { id: 1, name: "Auto-Tag Design Leads", trigger: "On Create", action: "Add Tag 'Design'", active: true },
+        { id: 2, name: "Follow-up Notification", trigger: "Stage -> Negotiating", action: "Notify 'Call Client'", active: false }
+      ]);
+
+      return (
+        <div className="card animate-fade">
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif" }}>Automated Workflows</h2>
+            <button className="btn-primary">+ Create Workflow</button>
+          </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            {workflows.map(w => (
+              <div key={w.id} className="card" style={{ marginBottom: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px" }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{w.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{w.trigger} ✨ {w.action}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 11, color: w.active ? "#34d399" : "#f87171" }}>{w.active ? "ACTIVE" : "PAUSED"}</span>
+                  <div style={{ 
+                    width: 32, height: 16, borderRadius: 8, background: w.active ? "var(--sf-blue)" : "#334155", 
+                    position: "relative", cursor: "pointer" 
+                  }} onClick={() => setWorkflows(list => list.map(item => item.id === w.id ? {...item, active: !item.active} : item))}>
+                    <div style={{ 
+                      width: 12, height: 12, borderRadius: "50%", background: "#fff", position: "absolute", 
+                      top: 2, left: w.active ? 18 : 2, transition: "0.2s" 
+                    }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ContactForm({ contact, onSave, onCancel }) {
+      const [form, setForm] = useState(contact || {
+        name: "", company: "", email: "", phone: "",
+        stage: "Lead", value: "", tags: [], notes: "", lastContact: new Date().toISOString().split("T")[0]
+      });
+
+      const inputStyle = {
+        background: "#0f172a", border: "1px solid #1e293b", borderRadius: 4,
+        color: "#e2e8f0", padding: "10px", fontSize: 13, width: "100%", marginBottom: 12
+      };
+
+      return (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card animate-fade" style={{ width: 450, background: "#060c17" }}>
+            <h3 style={{ marginBottom: 20 }}>{contact ? "Edit Contact" : "New Contact"}</h3>
+            <input placeholder="Name" style={inputStyle} value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+            <input placeholder="Company" style={inputStyle} value={form.company} onChange={e => setForm({...form, company: e.target.value})} />
+            <input placeholder="Email" style={inputStyle} value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+            <select style={inputStyle} value={form.stage} onChange={e => setForm({...form, stage: e.target.value})}>
+              {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input type="number" placeholder="Value" style={inputStyle} value={form.value} onChange={e => setForm({...form, value: e.target.value})} />
+            <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+              <button className="btn-primary" style={{ flex: 1 }} onClick={() => onSave({...form, value: Number(form.value) || 0, avatar: form.name.split(" ").map(w => w[0]).join("")})}>Save</button>
+              <button className="btn-primary" style={{ flex: 1, background: "#334155" }} onClick={onCancel}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function SoloCRM() {
+      const [session, setSession] = useState(null);
+      const [activeTab, setActiveTab] = useState("Pipeline");
+      const [contacts, setContacts] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [showForm, setShowForm] = useState(false);
+      const [editContact, setEditContact] = useState(null);
+      const [search, setSearch] = useState("");
+
+      useEffect(() => {
+        supa.auth.getSession().then(({ data: { session } }) => setSession(session));
+        const { data: { subscription } } = supa.auth.onAuthStateChange((_event, session) => setSession(session));
+        return () => subscription.unsubscribe();
+      }, []);
+
+      useEffect(() => {
+        if (!session) {
+          const s = localStorage.getItem("solo-crm-contacts");
+          setContacts(s ? JSON.parse(s) : initialContacts);
+          setLoading(false);
+          return;
+        }
+        const fetchContacts = async () => {
+          setLoading(true);
+          const { data } = await supa.from('contacts').select('*').eq('user_id', session.user.id);
+          if (data) setContacts(data);
+          setLoading(false);
+        };
+        fetchContacts();
+      }, [session]);
+
+      const saveContact = async (data) => {
+        const contactData = editContact ? { ...data, id: editContact.id, user_id: session?.user?.id } : { ...data, user_id: session?.user?.id };
+        if (session) {
+          await supa.from('contacts').upsert(contactData);
+          const { data: refreshed } = await supa.from('contacts').select('*').eq('user_id', session.user.id);
+          if (refreshed) setContacts(refreshed);
+        } else {
+          setContacts(cs => editContact ? cs.map(c => c.id === editContact.id ? { ...data, id: editContact.id } : c) : [...cs, { ...data, id: Date.now() }]);
+        }
+        setShowForm(false); setEditContact(null);
+      };
+
+      if (!session && !localStorage.getItem("solo-crm-contacts")) {
+        return (
+          <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button className="btn-primary" onClick={() => supa.auth.signInWithOAuth({ provider: 'google' })}>Sign in with Google</button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="app-shell">
+          <aside className="sidebar">
+            <div className="sidebar-brand">LovelyJJ <span style={{ color: "#fff", opacity: 0.5 }}>CRM</span></div>
+            <nav className="sidebar-nav">
+              {["Pipeline", "Calendar", "Workflows", "Contacts"].map(tab => (
+                <div key={tab} className={`nav-item ${activeTab === tab ? "active" : ""}`} onClick={() => setActiveTab(tab)}>
+                  <span style={{ fontSize: 18 }}>{tab === "Pipeline" ? "📊" : tab === "Calendar" ? "📅" : tab === "Workflows" ? "⚡" : "👥"}</span>
+                  {tab}
+                </div>
+              ))}
+            </nav>
+            <div style={{ padding: 24, borderTop: "1px solid var(--border)" }}>
+              <button className="btn-primary" style={{ width: "100%", background: "#1e293b" }} onClick={() => supa.auth.signOut()}>Sign Out</button>
+            </div>
+          </aside>
+
+          <header className="header">
+            <input className="header-search" placeholder="Search records, events..." value={search} onChange={e => setSearch(e.target.value)} />
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ color: "var(--text-muted)", fontSize: 18 }}>🔔</div>
+              <Avatar initials={session?.user?.email?.[0].toUpperCase() || "J"} size={32} />
+            </div>
+          </header>
+
+          <main className="main">
+            {activeTab === "Pipeline" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, alignItems: "start" }}>
+                {STAGES.map(stage => (
+                  <div key={stage} className="card" style={{ padding: 12 }}>
+                    <div style={{ fontWeight: 700, fontSize: 11, color: STAGE_COLORS[stage], textTransform: "uppercase", marginBottom: 12 }}>{stage}</div>
+                    {contacts.filter(c => c.stage === stage).map(c => (
+                      <div key={c.id} className="card" onClick={() => { setEditContact(c); setShowForm(true); }} style={{ background: "rgba(255,255,255,0.03)", padding: 12, fontSize: 12, cursor: "pointer", marginBottom: 8 }}>
+                        <div style={{ fontWeight: 600 }}>{c.name}</div>
+                        <div style={{ color: "var(--text-muted)", fontSize: 11 }}>{c.company}</div>
+                        <div style={{ color: "#34d399", fontWeight: 700, marginTop: 4 }}>${c.value.toLocaleString()}</div>
+                      </div>
+                    ))}
+                    <button onClick={() => setShowForm(true)} style={{ width: "100%", background: "none", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: 10, padding: 8, cursor: "pointer" }}>+ Add</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "Calendar" && <CalendarView contacts={contacts} />}
+            {activeTab === "Workflows" && <WorkflowManager contacts={contacts} />}
+            
+            {activeTab === "Contacts" && (
+              <div className="card animate-fade">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                  <h2 style={{ fontFamily: "'Playfair Display', serif" }}>Contacts</h2>
+                  <button className="btn-primary" onClick={() => setShowForm(true)}>+ New Contact</button>
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                      <th style={{ padding: "12px 8px" }}>Name</th>
+                      <th style={{ padding: "12px 8px" }}>Company</th>
+                      <th style={{ padding: "12px 8px" }}>Stage</th>
+                      <th style={{ padding: "12px 8px" }}>Value</th>
+                      <th style={{ padding: "12px 8px" }}>Email</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase())).map(c => (
+                      <tr key={c.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }} onClick={() => { setEditContact(c); setShowForm(true); }}>
+                        <td style={{ padding: "12px 8px" }}>{c.name}</td>
+                        <td style={{ padding: "12px 8px" }}>{c.company}</td>
+                        <td style={{ padding: "12px 8px" }}><StageBadge stage={c.stage} /></td>
+                        <td style={{ padding: "12px 8px" }}>${c.value.toLocaleString()}</td>
+                        <td style={{ padding: "12px 8px", color: "var(--text-muted)" }}>{c.email}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </main>
+
+          {showForm && <ContactForm contact={editContact} onSave={saveContact} onCancel={() => { setShowForm(false); setEditContact(null); }} />}
+          
+          {loading && (
+            <div style={{ position: "fixed", bottom: 20, right: 20, background: "rgba(1, 118, 211, 0.9)", padding: "10px 20px", borderRadius: 8, color: "#fff", fontSize: 12, zIndex: 1000 }}>
+              ☁️ Syncing...
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<SoloCRM />);
+  </script>
+
+</body>
+
+</html>
